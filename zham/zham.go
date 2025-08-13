@@ -1,7 +1,6 @@
 package zham
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"zham-app/db"
@@ -14,14 +13,14 @@ type diffStruct struct {
 }
 
 // remove in prod
-type ColabBody struct {
-	Offsets []diffStruct `json:"Offsets"`
-	SongID  string       `json:"SongID"`
-}
-
+// type ColabBody struct {
+// 	Offsets []diffStruct `json:"Offsets"`
+// 	SongID  string       `json:"SongID"`
+// }
 // //
 
-func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, numTargetZones int) ([]string, []ColabBody, error) {
+// func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, numTargetZones int) ([]string, []ColabBody, error) {
+func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, numTargetZones int) ([]string, error) {
 
 	addresses := []uint32{}
 	for address := range fingerprints {
@@ -30,7 +29,8 @@ func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, 
 
 	m, err := db.GetCouples(addresses)
 	if err != nil {
-		return nil, nil, err
+		// return nil, nil, err
+		return nil, err
 	}
 
 	type matchesStruct struct {
@@ -81,8 +81,8 @@ func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, 
 		}
 	}
 
-	targetCoefficient := 0.6
-	threshold := int(targetCoefficient * float64(numTargetZones))
+	// targetCoefficient := 0.6
+	// threshold := int(targetCoefficient * float64(numTargetZones))
 
 	type bestStruct struct {
 		SongId   string
@@ -96,10 +96,10 @@ func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, 
 	var bestMatch []bestStruct
 	var paddedMatch []padStruct
 
-	offsets := []ColabBody{}
+	// offsets := []ColabBody{}
 
 	for songID, anchorZones := range targetZones {
-		fmt.Println("songId and anchorZones len", songID, len(anchorZones), threshold)
+		// fmt.Println("songId and anchorZones len", songID, len(anchorZones), threshold)
 
 		if len(anchorZones) >= 1 { //threshold {
 			match := matches[songID]
@@ -130,11 +130,11 @@ func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, 
 			})
 
 			// remove in prod
-			var cBody ColabBody
-			cBody.Offsets = arr
-			cBody.SongID = songID
+			// var cBody ColabBody
+			// cBody.Offsets = arr
+			// cBody.SongID = songID
 
-			offsets = append(offsets, cBody)
+			// offsets = append(offsets, cBody)
 			//
 
 			// compute ranges(of length 100) for each diff, for histogram
@@ -152,8 +152,8 @@ func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, 
 				mpD[arr[i].Diff] = cnt
 			}
 
-			maxCnt, mean, stdDev, z := calculateStats(mpD)
-			fmt.Println("song, scores", songID, maxCnt, mean, stdDev, z)
+			maxCnt, _, _, z := calculateStats(mpD)
+			// fmt.Println("song, scores", songID, maxCnt, mean, stdDev, z)
 			if z >= 2.5 {
 				bestMatch = append(bestMatch, bestStruct{SongId: songID, maxCount: z})
 			} else {
@@ -176,7 +176,7 @@ func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, 
 
 	for _, val := range bestMatch {
 		if rem < 10 {
-			fmt.Println("bestMatch max count", val.SongId, val.maxCount)
+			// fmt.Println("bestMatch max count", val.SongId, val.maxCount)
 			// res = append(res, val.SongId)
 			res[rem] = val.SongId
 			rem++
@@ -186,14 +186,15 @@ func FindMatches(fingerprints map[uint32][]models.Couple, sizeOfTargetZone int, 
 	if rem < 10 {
 		for _, score := range paddedMatch {
 			if rem < 10 {
-				fmt.Println("paddedMatch max count", score.SongId, score.maxCount)
+				// fmt.Println("paddedMatch max count", score.SongId, score.maxCount)
 				res[rem] = score.SongId
 				rem++
 			}
 		}
 	}
 
-	return res, offsets, nil
+	// return res, offsets, nil
+	return res, nil
 
 }
 

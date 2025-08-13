@@ -94,3 +94,43 @@ func WriteToJSON(filePath string, dataToStore map[uint32][]models.Couple) error 
 
 	return os.WriteFile(dbPath, data, 0644)
 }
+
+func ReadNumZham(filePath string, songId string) (int, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return 0, err
+	}
+
+	var db map[string]int
+	if err := json.Unmarshal(data, &db); err != nil {
+		return 0, err
+	}
+
+	return db[songId], nil
+}
+
+func WriteToZhamJSON(filePath string, songId string) (int, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return 0, err
+	}
+
+	var db map[string]int
+	if err := json.Unmarshal(data, &db); err != nil {
+		return 0, err
+	}
+
+	res := db[songId] + 1
+	db[songId] = res
+
+	newDb, err := json.MarshalIndent(db, "", " ")
+	if err != nil {
+		return 0, err
+	}
+
+	if err := os.WriteFile(filePath, newDb, 0644); err != nil {
+		return 0, err
+	}
+
+	return res, nil
+}

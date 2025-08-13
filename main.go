@@ -5,13 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
-	// "zham-app/wav"
 	"zham-app/db"
-	"zham-app/models"
-
-	// "zham-app/models"
 	"zham-app/wav"
 	"zham-app/zham"
 
@@ -25,6 +20,7 @@ func main() {
 
 	router.HandleFunc("/zham", searchForSongMatch()).Methods("POST")
 	router.HandleFunc("/zham", insertSong()).Methods("PUT")
+	router.HandleFunc("/zham/{songId}", getSongZhams()).Methods("GET")
 
 	enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
 
@@ -35,7 +31,7 @@ func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -60,9 +56,27 @@ type JsonBody struct {
 	// audioDuration float64
 }
 
+func getSongZhams() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		songId := vars["songId"]
+
+		res := 0
+		cnt, err := db.ReadNumZham("zham.json", songId)
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			res = cnt
+		}
+
+		json.NewEncoder(w).Encode(res)
+
+	}
+}
+
 func insertSong() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now()
+		// startTime := time.Now()
 
 		resampleRate := 48000
 
@@ -88,12 +102,12 @@ func insertSong() http.HandlerFunc {
 		peaks := zham.GetPeaks(spectrogram, timeArr, 11, 5, 1.0)
 
 		fingerprints, _ := zham.Fingerprint(peaks, songId, 5)
-		fmt.Println("fp_len", len(fingerprints))
+		// fmt.Println("fp_len", len(fingerprints))
 		if err := db.WriteToJSON("db.json", fingerprints); err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println("time taken to save song: ", time.Since(startTime))
+		// fmt.Println("time taken to save song: ", time.Since(startTime))
 
 		json.NewEncoder(w).Encode("Success!")
 	}
@@ -101,7 +115,7 @@ func insertSong() http.HandlerFunc {
 
 func searchForSongMatch() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now()
+		// startTime := time.Now()
 
 		resampleRate := 48000
 
@@ -144,20 +158,33 @@ func searchForSongMatch() http.HandlerFunc {
 
 		fingerprints, numTargetZones := zham.Fingerprint(peaks, songId, 5)
 
-		res, offsets, err := zham.FindMatches(fingerprints, 5, numTargetZones)
+		// res, offsets, err := zham.FindMatches(fingerprints, 5, numTargetZones)
+		res, err := zham.FindMatches(fingerprints, 5, numTargetZones)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println("full time taken to search song: ", time.Since(startTime))
+		// fmt.Println("full time taken to search song: ", time.Since(startTime))
 
-		type ResBody struct {
-			Results []string
-			Peaks   []models.Peak
-			Offsets []zham.ColabBody
+		// type ResBody struct {
+		// 	Results []string
+		// 	Peaks   []models.Peak
+		// 	Offsets []zham.ColabBody
+		// }
+
+		// Res := ResBody{Results: res, Peaks: peaks, Offsets: offsets}
+
+		cnt, err := db.WriteToZhamJSON("zham.json", res[0])
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		Res := ResBody{Results: res, Peaks: peaks, Offsets: offsets}
+		type ResBody struct {
+			Results   []string
+			ZhamCount int
+		}
+
+		Res := ResBody{Results: res, ZhamCount: cnt}
 
 		json.NewEncoder(w).Encode(Res)
 	}
