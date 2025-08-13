@@ -84,12 +84,12 @@ func ConverterToWAV(r *http.Request, resampleRate int) ([]float64, error) {
 	}
 	defer file.Close()
 
-	fmt.Printf("Received file: %s\n", header.Filename)
+	// fmt.Printf("Received file: %s\n", header.Filename)
 
-	uploadedPath := "tmp/" + header.Filename
+	uploadedPath := "/tmp/" + header.Filename
 	outputFile, err := os.Create(uploadedPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create file in path %v", uploadedPath)
+		return nil, fmt.Errorf("failed to create file in path %v, err %v", uploadedPath, err)
 	}
 
 	if _, err := io.Copy(outputFile, file); err != nil {
