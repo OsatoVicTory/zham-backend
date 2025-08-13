@@ -18,9 +18,9 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/zham", searchForSongMatch()).Methods("POST")
-	router.HandleFunc("/zham", insertSong()).Methods("PUT")
-	router.HandleFunc("/zham/{songId}", getSongZhams()).Methods("GET")
+	router.HandleFunc("/zham", searchForSongMatch()).Methods("POST", "OPTIONS")
+	router.HandleFunc("/zham", insertSong()).Methods("PUT", "OPTIONS")
+	router.HandleFunc("/zham/{songId}", getSongZhams()).Methods("GET", "OPTIONS")
 
 	enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
 
@@ -33,7 +33,7 @@ func enableCORS(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		if r.Method == "OPTIONS" {
+		if r.Method == http.MethodOptions { //"OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
