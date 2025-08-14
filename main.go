@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 
 	"zham-app/db"
 	"zham-app/wav"
@@ -113,9 +114,24 @@ func insertSong() http.HandlerFunc {
 	}
 }
 
+func printMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	fmt.Printf("Alloc: %.2f MB, TotalAlloc: %.2f MB, Sys: %.2f MB, NumGC: %d\n",
+		float64(m.Alloc)/1024/1024,
+		float64(m.TotalAlloc)/1024/1024,
+		float64(m.Sys)/1024/1024,
+		m.NumGC,
+	)
+}
+
 func searchForSongMatch() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// startTime := time.Now()
+
+		fmt.Println("Initial memory usage")
+		printMemUsage()
 
 		resampleRate := 48000
 
@@ -185,6 +201,9 @@ func searchForSongMatch() http.HandlerFunc {
 		}
 
 		Res := ResBody{Results: res, ZhamCount: cnt}
+
+		fmt.Println("Final memory usage")
+		printMemUsage()
 
 		json.NewEncoder(w).Encode(Res)
 	}
